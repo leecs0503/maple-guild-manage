@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "maple-guild-manage-api-server"
+version = "0.1.0"
+description = ""
+authors = ["changsu lee <leecs0503@naver.com>"]
+readme = "README.md"
+packages = [{include = "maple_guild_manage_api_server"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pymysql = "^1.0.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
