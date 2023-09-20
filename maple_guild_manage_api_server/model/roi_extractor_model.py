@@ -45,12 +45,34 @@ class RoiExtractorModel:
             target_img=target_image,
             template_img=self.standard_guild_ui_img,
         )
-        (guild_contents_x, guild_contents_x) = self._template_matching(
+        (guild_contents_x, guild_contents_y) = self._template_matching(
             target_img=target_image,
             template_img=self.standard_guild_contents_img,
         )
-        print("!!", guild_ui_x, guild_ui_y)
-        print("!!", guild_contents_x, guild_contents_x)
+        (standard_x, standard_y) = self._get_standard_cordinate(
+            guild_ui_x=guild_ui_x,
+            guild_ui_y=guild_ui_y,
+            guild_contents_x=guild_contents_x,
+            guild_contents_y=guild_contents_y,
+        )
+        return None
+
+    def _get_standard_cordinate(
+        self,
+        guild_ui_x: int,
+        guild_ui_y: int,
+        guild_contents_x: int,
+        guild_contents_y: int,
+    ) -> Tuple[int, int]:
+        EXPECTED_DELTA_X, EXPECTED_DELTA_Y = (21, 370)
+
+        if guild_ui_x < 0 and guild_contents_x < 0:
+            return -1, -1
+        if guild_ui_x < 0:
+            std_x = guild_contents_x - EXPECTED_DELTA_X
+            std_y = guild_contents_y - EXPECTED_DELTA_Y
+            return std_x, std_y
+        return guild_ui_x, guild_ui_y
 
     def _template_matching(
         self,
@@ -58,15 +80,19 @@ class RoiExtractorModel:
         template_img: Image.Image,
     ) -> Tuple[int, int]:
         """Get target image's left upper corner coordinate of template image by hashing. if not exist, return (-1, -1)."""
+        # TODO: functionalize
+        i64_prime = np.uint64(PRIME_NUMBER)
+
         target_w, target_h = target_img.size
         template_w, template_h = template_img.size
-        i64_prime = np.uint64(PRIME_NUMBER)
         if target_w < template_w or target_h < template_h:
             return (-1, -1)
+
         target_arr = self._hash_arr_of(target_img, std_h=template_h, prime=i64_prime)
         template_arr = self._hash_arr_of(
             template_img, std_h=template_h, prime=i64_prime
         )
+
         sum_target_arr = self._make_sum_arr(target_arr)
         sum_template_arr = self._make_sum_arr(template_arr)
         template_sum = sum_template_arr[template_h][template_w]
@@ -98,11 +124,10 @@ class RoiExtractorModel:
         pow_arr = np.zeros((h, w), dtype=np.uint64)
         now_x = np.uint64(1)
         k = pow_uint64(prime, std_h)
-        np.uint64(1)
         for j in range(w):
             now_y = now_x
             for i in range(h):
-                pow_arr[i][j] = now_y
+                pow_arr[i, j] = now_y
                 now_y = now_y * i64_prime
             now_x = now_x * k
         return arr_2d * pow_arr
