@@ -7,9 +7,11 @@ readme = "README.md"
 packages = [{include = "maple_guild_manage_api_server"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.10"
 pymysql = "^1.0.3"
 fastapi = "^0.103.0"
+numpy = "^1.26.0"
+pillow = "^10.0.1"
 
 
 [tool.poetry.group.dev.dependencies]
