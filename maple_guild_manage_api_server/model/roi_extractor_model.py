@@ -6,6 +6,8 @@ from typing import List, Tuple, Union
 import numpy as np
 from PIL import Image
 
+from ..base.base_model import BaseModel
+
 PRIME_NUMBER = np.uint64(1000000007)
 
 
@@ -28,9 +30,15 @@ class RoiExtractorModelConfig:
 class RegionOnInterest:
     num: int
     names: List[Image.Image]
+    jobs: List[Image.Image]
+    levels: List[Image.Image]
+    authorities: List[Image.Image]
+    week_mission_points: List[Image.Image]
+    suro_points: List[Image.Image]
+    flag_points: List[Image.Image]
 
 
-class RoiExtractorModel:
+class RoiExtractorModel(BaseModel):
     def __init__(
         self,
         config: RoiExtractorModelConfig,
@@ -70,35 +78,110 @@ class RoiExtractorModel:
         )
 
         return ROI
-    
+
     def _get_region_on_interest(
         self,
         target_image: Image.Image,
         std_x: int,
         std_y: int,
     ) -> RegionOnInterest:
+        # TODO: black 이미지 제거 (*현재는 무조건 17장이 추출됨.)
         USER_NUM = 17
-        DELTA_X, DELTA_Y = 205, 125
-        BOX_H = 24
 
         accumulated_w_sum = std_x
+        default_kwargs = {
+            "target_image": target_image,
+            "std_y": std_y,
+            "user_num": USER_NUM,
+        }
+
         # extract name from taget_image.
         NAME_BOX_W = 70
-        names = [
-            target_image.crop((
-                accumulated_w_sum + DELTA_X, std_y + DELTA_Y + BOX_H * i,
-                accumulated_w_sum + DELTA_X + NAME_BOX_W, std_y + DELTA_Y + BOX_H * (i + 1)
-                # h -(std_x + delta_x), w -(std_y + delta_y)
-            ))
-            for i in range(USER_NUM)
-        ]
-        accumulated_w_sum += NAME_BOX_W
+        accumulated_w_sum, names = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=NAME_BOX_W,
+        )
+        # extract job from taget_image.
+        JOB_BOX_W = 84
+        accumulated_w_sum, jobs = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=JOB_BOX_W,
+        )
+        # extract level from taget_image.
+        LEVEl_BOX_W = 23
+        accumulated_w_sum, levels = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=LEVEl_BOX_W,
+        )
+        # extract authorities from taget_image.
+        AUTHORITY_BOX_W = 78
+        accumulated_w_sum, authorities = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=AUTHORITY_BOX_W,
+        )
 
-        # TODO: black 이미지 제거
+        # extract week_mission_point from taget_image.
+        WEEK_MISSION_POINT_BOX_W = 36
+        accumulated_w_sum, week_mission_points = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=WEEK_MISSION_POINT_BOX_W,
+        )
+
+        # extract suro_point from taget_image.
+        SURO_POINT_BOX_W = 80
+        accumulated_w_sum, suro_points = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=SURO_POINT_BOX_W,
+        )
+
+        # extract flag_point from taget_image.
+        FLAG_POINT_BOX_W = 80
+        accumulated_w_sum, flag_points = self._get_images(
+            **default_kwargs,
+            accumulated_w_sum=accumulated_w_sum,
+            region_box_w=FLAG_POINT_BOX_W,
+        )
+
         return RegionOnInterest(
             num=USER_NUM,
             names=names,
+            jobs=jobs,
+            levels=levels,
+            authorities=authorities,
+            week_mission_points=week_mission_points,
+            suro_points=suro_points,
+            flag_points=flag_points,
         )
+
+    def _get_images(
+        self,
+        target_image: Image.Image,
+        accumulated_w_sum: int,
+        std_y: int,
+        region_box_w: int,
+        user_num: int,
+    ) -> Tuple[int, List[Image.Image]]:
+        DELTA_X, DELTA_Y = 205, 125
+        BOX_H = 24
+        nxt_accumulated_w_sum = accumulated_w_sum + region_box_w
+        images = [
+            target_image.crop(
+                (
+                    accumulated_w_sum + DELTA_X,
+                    std_y + DELTA_Y + BOX_H * i,
+                    nxt_accumulated_w_sum + DELTA_X,
+                    std_y + DELTA_Y + BOX_H * i + BOX_H,
+                )
+            )
+            for i in range(user_num)
+        ]
+        return (nxt_accumulated_w_sum, images)
 
     def _get_standard_cordinate(
         self,
