@@ -1,6 +1,8 @@
 # TODO: guild_ui와 guild_contents중 하나에 마우스가 올라가 있거나 인식 못할 때 처리
 
+import base64
 from dataclasses import dataclass
+from io import BytesIO
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -52,11 +54,15 @@ class RoiExtractorModel(BaseModel):
 
         self.ready = True
 
+    def b64_str_to_PIL_image(self, b64_str: str) -> Image.Image:
+        image_data = base64.b64decode(b64_str)
+        image_io = BytesIO(image_data)
+        return Image.open(image_io)
+
     def inference(
         self,
-        img_path: str,
+        target_image: Image.Image,
     ) -> RegionOnInterest:
-        target_image = Image.open(img_path)
         (guild_ui_x, guild_ui_y) = self._template_matching(
             target_img=target_image,
             template_img=self.standard_guild_ui_img,

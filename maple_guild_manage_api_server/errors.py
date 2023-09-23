@@ -1,9 +1,10 @@
-
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
+
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
+
 
 class InvalidInput(ValueError):
     """
@@ -16,6 +17,7 @@ class InvalidInput(ValueError):
 
     def __str__(self):
         return self.reason
+
 
 async def invalid_input_handler(_, exc):
     logger.error("Exception:", exc_info=exc)

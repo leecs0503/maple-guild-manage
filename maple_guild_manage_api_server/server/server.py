@@ -1,28 +1,51 @@
-import fastapi
+import asyncio
+from typing import Dict, List, Optional, Union
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
-from ..errors import InvalidInput, invalid_input_handler
 
-class DataPlane:
-    def __init__(self):
-        pass
+from ..errors import InvalidInput, invalid_input_handler
+from .dataplane import DataPlane
+from .protocol import RestProtocol
+
 
 class WebServer:
     def __init__(
         self,
-        dataplane: DataPlane,
+        protocol: RestProtocol,
     ):
-        self.dataplane = dataplane
+        self.protocol = protocol
 
     def create_application(self) -> FastAPI:
         return FastAPI(
             title="MapleGuildManageWebServer",
-              routes=[
+            routes=[
                 # Server Liveness API returns 200 if server is alive.
-                APIRoute(r"/", self.dataplane.live),
+                APIRoute("/", self.protocol.live),
                 # Metrics
-
-            ], exception_handlers={
+                APIRoute("/page_info", self.protocol.post_page_info, methods=["POST"]),
+            ],
+            exception_handlers={
                 InvalidInput: invalid_input_handler,
-            }
+            },
         )
+
+
+class UvicornServer:
+    def __init__(
+        self,
+        web_server: WebServer,
+        http_port: int,
+    ):
+        self.web_server = web_server
+        app = web_server.create_application()
+        self.cfg = uvicorn.Config(
+            app=app,
+            host="0.0.0.0",
+            port=http_port,
+        )
+
+    def run_sync(self):
+        server = uvicorn.Server(config=self.cfg)
+        asyncio.run(server.serve())

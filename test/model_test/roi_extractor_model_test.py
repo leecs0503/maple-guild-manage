@@ -4,7 +4,9 @@ from typing import List
 from PIL import Image
 
 from maple_guild_manage_api_server.model.roi_extractor_model import (
-    RoiExtractorModel, RoiExtractorModelConfig)
+    RoiExtractorModel,
+    RoiExtractorModelConfig,
+)
 
 
 def test_roi_extractor_model():
@@ -28,7 +30,8 @@ def test_roi_extractor_model():
     )
     model = RoiExtractorModel(config=model_config)
 
-    result = model.inference(str(TEST_DATA_PATH / "01_image.png"))
+    target_image = Image.open(str(TEST_DATA_PATH / "01_image.png"))
+    result = model.inference(target_image)
 
     assert result.num == expected_result_num
 
@@ -51,7 +54,6 @@ def _assert_equal_of(
     msg: str,
 ):
     for result_img, expected_name_img in zip(result_imgs, expected_imgs):
-        result_img.save(f"./.idea/{msg}.png")
         assert list(result_img.getdata()) == list(expected_name_img.getdata()), msg
 
 
