@@ -1,10 +1,12 @@
+# TODO: guild_ui와 guild_contents중 하나에 마우스가 올라가 있거나 인식 못할 때 처리
+
 from dataclasses import dataclass
-from typing import Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 from PIL import Image
 
-PRIME_NUMBER = np.int64(1000000007)
+PRIME_NUMBER = np.uint64(1000000007)
 
 
 def pow_uint64(base, exponent: int):
@@ -20,6 +22,12 @@ def pow_uint64(base, exponent: int):
 class RoiExtractorModelConfig:
     standard_guild_ui_img_path: str
     standard_guild_contents_img_path: str
+
+
+@dataclass
+class RegionOnInterest:
+    num: int
+    names: List[Image.Image]
 
 
 class RoiExtractorModel:
@@ -39,7 +47,7 @@ class RoiExtractorModel:
     def inference(
         self,
         img_path: str,
-    ):
+    ) -> RegionOnInterest:
         target_image = Image.open(img_path)
         (guild_ui_x, guild_ui_y) = self._template_matching(
             target_img=target_image,
@@ -55,7 +63,42 @@ class RoiExtractorModel:
             guild_contents_x=guild_contents_x,
             guild_contents_y=guild_contents_y,
         )
-        return None
+        ROI = self._get_region_on_interest(
+            target_image=target_image,
+            std_x=standard_x,
+            std_y=standard_y,
+        )
+
+        return ROI
+    
+    def _get_region_on_interest(
+        self,
+        target_image: Image.Image,
+        std_x: int,
+        std_y: int,
+    ) -> RegionOnInterest:
+        USER_NUM = 17
+        DELTA_X, DELTA_Y = 205, 125
+        BOX_H = 24
+
+        accumulated_w_sum = std_x
+        # extract name from taget_image.
+        NAME_BOX_W = 70
+        names = [
+            target_image.crop((
+                accumulated_w_sum + DELTA_X, std_y + DELTA_Y + BOX_H * i,
+                accumulated_w_sum + DELTA_X + NAME_BOX_W, std_y + DELTA_Y + BOX_H * (i + 1)
+                # h -(std_x + delta_x), w -(std_y + delta_y)
+            ))
+            for i in range(USER_NUM)
+        ]
+        accumulated_w_sum += NAME_BOX_W
+
+        # TODO: black 이미지 제거
+        return RegionOnInterest(
+            num=USER_NUM,
+            names=names,
+        )
 
     def _get_standard_cordinate(
         self,
@@ -98,7 +141,7 @@ class RoiExtractorModel:
         template_sum = sum_template_arr[template_h][template_w]
 
         now_x = np.uint64(1)
-        k = pow_uint64(i64_prime, template_h)
+        std_h = pow_uint64(i64_prime, template_h)
         np.uint64(1)
         for x in range(target_w - template_w + 1):
             now_y = now_x
@@ -110,11 +153,11 @@ class RoiExtractorModel:
                 now_y *= i64_prime
                 if target_sum == template_value:
                     return (x, y)
-            now_x = now_x * k
+            now_x = now_x * std_h
         return (-1, -1)
 
     def _hash_arr_of(
-        self, img: Image.Image, std_h: int, prime: int = PRIME_NUMBER
+        self, img: Image.Image, std_h: int, prime: Union[int, np.uint64] = PRIME_NUMBER
     ) -> np.ndarray:
         w, h = img.size
         i64_prime = np.uint64(prime)
