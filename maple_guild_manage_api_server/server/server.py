@@ -1,12 +1,10 @@
 import asyncio
-from typing import Dict, List, Optional, Union
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from ..errors import InvalidInput, invalid_input_handler
-from .dataplane import DataPlane
 from .protocol import RestProtocol
 
 

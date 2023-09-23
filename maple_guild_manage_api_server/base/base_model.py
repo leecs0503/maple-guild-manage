@@ -7,4 +7,4 @@ class BaseModel(ABC):
 
     @abstractmethod
     def inference(self, *args, **kwargs):
-        raise NotImplemented("method 'inference' is not implemented.")
+        raise NotImplementedError("method 'inference' is not implemented.")
