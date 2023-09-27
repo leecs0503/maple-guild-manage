@@ -22,7 +22,7 @@ class WebServer:
                 # Server Liveness API returns 200 if server is alive.
                 APIRoute("/", self.protocol.live),
                 # Metrics
-                APIRoute("/page_info", self.protocol.post_page_info, methods=["POST"]),
+                APIRoute("/api/page_info", self.protocol.post_page_info, methods=["POST"]),
             ],
             exception_handlers={
                 InvalidInput: invalid_input_handler,

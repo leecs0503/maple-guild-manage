@@ -46,7 +46,7 @@ class RoiExtractorModel(BaseModel):
         config: RoiExtractorModelConfig,
     ):
         self.config = config
-
+        np.seterr(over="ignore")
         self.standard_guild_ui_img = Image.open(self.config.standard_guild_ui_img_path)
         self.standard_guild_contents_img = Image.open(
             self.config.standard_guild_contents_img_path
@@ -58,6 +58,12 @@ class RoiExtractorModel(BaseModel):
         image_data = base64.b64decode(b64_str)
         image_io = BytesIO(image_data)
         return Image.open(image_io)
+    
+    def PIL_image_to_b64_str(self, img: Image.Image) -> str:
+        buffered = BytesIO()
+        img.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
 
     def inference(
         self,
@@ -67,7 +73,7 @@ class RoiExtractorModel(BaseModel):
             target_img=target_image,
             template_img=self.standard_guild_ui_img,
         )
-        (guild_contents_x, guild_contents_y) = self._template_matching(
+        (guild_contents_x, guild_contents_y) = self._template_matching( # FIXME: 여기에 마우스가 올라가 있는 경우 버그가 발생
             target_img=target_image,
             template_img=self.standard_guild_contents_img,
         )
@@ -77,13 +83,13 @@ class RoiExtractorModel(BaseModel):
             guild_contents_x=guild_contents_x,
             guild_contents_y=guild_contents_y,
         )
-        ROI = self._get_region_on_interest(
+        roi = self._get_region_on_interest(
             target_image=target_image,
             std_x=standard_x,
             std_y=standard_y,
         )
 
-        return ROI
+        return roi
 
     def _get_region_on_interest(
         self,
